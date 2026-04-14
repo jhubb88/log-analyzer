@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Log Analyzer — Jimmy Hubbard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg:         #0a0e1a;
+      --bg-card:    #1a1a2e;
+      --accent:     #e94560;
+      --accent-dim: rgba(233,69,96,0.15);
+      --green:      #06d6a0;
+      --teal:       #a8dadc;
+      --text:       #ffffff;
+      --muted:      #8892b0;
+      --border:     rgba(168,218,220,0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 20px 32px;
+    }
+
+    header {
+      align-self: stretch;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      height: 52px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      margin-bottom: 40px;
+      flex-shrink: 0;
+    }
+
+    .logo-badge { display: none; }
+
+    header h1 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0;
+      letter-spacing: -0.3px;
+      white-space: nowrap;
+    }
+
+    header h1 .title-accent { color: var(--accent); }
+
+    header p {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-left: 4px;
+    }
+
+    header p:last-child { margin-left: auto; }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      width: 100%;
+      max-width: 700px;
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .card-icon.purple { background: rgba(255,255,255,0.08); }
+    .card-icon.blue   { background: linear-gradient(135deg, #1d4ed8, #60a5fa); }
+    .card-icon.red    { background: linear-gradient(135deg, #dc2626, #f87171); }
+    .card-icon.yellow { background: linear-gradient(135deg, #b45309, #fbbf24); }
+    .card-icon.green  { background: linear-gradient(135deg, #065f46, var(--green)); }
+    .card-icon.teal   { background: linear-gradient(135deg, #0e7490, var(--teal)); }
+
+    .card h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .steps { list-style: none; counter-reset: steps; }
+
+    .steps li {
+      counter-increment: steps;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 14px;
+      font-size: 0.93rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
+    .steps li::before {
+      content: counter(steps);
+      background: rgba(255,255,255,0.08);
+      color: var(--muted);
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+
+    .steps li strong { color: #e2e8f0; }
+
+    #drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 16px;
+      background: transparent;
+    }
+
+    #drop-zone:hover, #drop-zone.over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    #drop-zone svg { margin-bottom: 10px; opacity: 0.5; stroke: var(--muted); }
+    #drop-zone p { color: var(--muted); font-size: 0.93rem; margin-bottom: 4px; }
+    #drop-zone span { color: var(--accent); font-weight: 600; cursor: pointer; }
+    #drop-zone small { color: #475569; font-size: 0.8rem; }
+    #file-input { display: none; }
+
+    #file-name {
+      font-size: 0.85rem;
+      color: var(--green);
+      margin-bottom: 16px;
+      min-height: 1.2rem;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 13px 28px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, filter 0.2s;
+      font-family: inherit;
+    }
+
+    button:active { transform: scale(0.97); }
+    button:not(:disabled):hover { filter: brightness(1.1); }
+
+    #btn-analyze {
+      background: var(--accent);
+      color: #fff;
+      flex: 1;
+    }
+
+    #btn-analyze:disabled { background: #334155; color: #64748b; cursor: not-allowed; filter: none; }
+
+    #btn-demo {
+      background: rgba(6,214,160,0.15);
+      color: var(--green);
+      border: 1px solid rgba(6,214,160,0.35);
+    }
+
+    #btn-clear {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    #btn-clear:disabled { background: #334155; color: #64748b; cursor: not-allowed; filter: none; }
+
+    #status {
+      margin-top: 16px;
+      font-size: 0.9rem;
+      color: #64748b;
+      min-height: 1.2rem;
+      text-align: center;
+    }
+
+    #status.error { color: #f87171; }
+
+    #status.analyzing {
+      color: var(--teal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .wave {
+      display: inline-flex;
+      gap: 3px;
+      align-items: flex-end;
+    }
+
+    .wave span {
+      display: inline-block;
+      width: 3px;
+      background: var(--teal);
+      border-radius: 2px;
+      animation: wave 0.8s ease-in-out infinite;
+    }
+
+    .wave span:nth-child(1) { height: 8px;  animation-delay: 0s; }
+    .wave span:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+    .wave span:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+    .wave span:nth-child(4) { height: 16px; animation-delay: 0.15s; }
+    .wave span:nth-child(5) { height: 8px;  animation-delay: 0.05s; }
+
+    @keyframes wave {
+      0%, 100% { transform: scaleY(1); }
+      50%       { transform: scaleY(0.4); }
+    }
+
+    /* Results */
+    #results { display: none; }
+
+    .meta-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .meta-value {
+      font-size: 0.95rem;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .severity-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-text {
+      font-size: 0.93rem;
+      color: #cbd5e1;
+      line-height: 1.7;
+    }
+
+    .items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .item-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .item-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+
+    .dot-red    { background: #f87171; }
+    .dot-yellow { background: #fbbf24; }
+    .dot-blue   { background: #60a5fa; }
+    .dot-green  { background: var(--green); }
+    .dot-purple { background: var(--accent); }
+
+    .prevention-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .prevention-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .prevention-list li::before {
+      content: '🛡️';
+      font-size: 0.85rem;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+
+    footer {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: #334155;
+      text-align: center;
+    }
+
+    footer a {
+      color: #475569;
+      text-decoration: none;
+    }
+
+    footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-badge">🔍 Jimmy Hubbard</div>
+    <h1>AI Log <span class="title-accent">Analyzer</span></h1>
+    <p>Upload a log file — AI will diagnose errors, patterns, and fixes.</p>
+    <p style="margin-top:8px;font-size:0.78rem;color:#6b7a99;letter-spacing:0.3px;">Powered by Claude &nbsp;·&nbsp; Built by Jimmy Hubbard</p>
+  </header>
+
+  <!-- How to Use -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon purple">📋</div>
+      <h2>How to Use</h2>
+    </div>
+    <ol class="steps">
+      <li><span>Upload a <strong>log file</strong> using the upload area below — supports LOG, TXT, CSV, and JSON.</span></li>
+      <li><span>Click <strong>Analyze Log</strong> to send the file to AWS Bedrock AI for analysis.</span></li>
+      <li><span>Review the <strong>full report</strong>: severity, errors, warnings, patterns, and recommended fixes.</span></li>
+      <li><span>Click <strong>Clear</strong> to reset and analyze another file.</span></li>
+    </ol>
+  </div>
+
+  <!-- Upload -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon blue">⚡</div>
+      <h2>Upload Log File</h2>
+    </div>
+
+    <div id="drop-zone">
+      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="#a78bfa" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+      </svg>
+      <p>Drag & drop your log file here, or <span id="browse-link">browse files</span></p>
+      <small>Supports LOG, TXT, CSV, JSON</small>
+      <input type="file" id="file-input" accept=".log,.txt,.csv,.json" />
+    </div>
+
+    <div id="file-name"></div>
+
+    <div class="btn-row">
+      <button id="btn-analyze" disabled>🔍 Analyze Log</button>
+      <button id="btn-demo">⚡ Try a Live Demo</button>
+      <button id="btn-clear" disabled>✕ Clear</button>
+    </div>
+
+    <div id="status"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <!-- Severity & Log Type -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon teal">📊</div>
+        <h2>Overview</h2>
+      </div>
+      <div class="meta-row">
+        <div class="meta-item">
+          <span class="meta-label">Log Type</span>
+          <span class="meta-value" id="res-logType">—</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Severity</span>
+          <span class="severity-badge" id="res-severity">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon purple">📝</div>
+        <h2>Summary</h2>
+      </div>
+      <p class="summary-text" id="res-summary"></p>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card" id="card-timeline" style="display:none;">
+      <div class="card-header">
+        <div class="card-icon blue">⏱️</div>
+        <h2>Timeline</h2>
+      </div>
+      <p class="summary-text" id="res-timeline"></p>
+    </div>
+
+    <!-- Errors -->
+    <div class="card" id="card-errors" style="display:none;">
+      <div class="card-header">
+        <div class="card-icon red">🚨</div>
+        <h2>Errors Found</h2>
+      </div>
+      <div class="items-list" id="res-errors"></div>
+    </div>
+
+    <!-- Warnings -->
+    <div class="card" id="card-warnings" style="display:none;">
+      <div class="card-header">
+        <div class="card-icon yellow">⚠️</div>
+        <h2>Warnings</h2>
+      </div>
+      <div class="items-list" id="res-warnings"></div>
+    </div>
+
+    <!-- Patterns -->
+    <div class="card" id="card-patterns" style="display:none;">
+      <div class="card-header">
+        <div class="card-icon blue">🔄</div>
+        <h2>Patterns Detected</h2>
+      </div>
+      <div class="items-list" id="res-patterns"></div>
+    </div>
+
+    <!-- Recommended Actions -->
+    <div class="card" id="card-actions" style="display:none;">
+      <div class="card-header">
+        <div class="card-icon green">✅</div>
+        <h2>Recommended Actions</h2>
+      </div>
+      <div class="items-list" id="res-actions"></div>
+    </div>
+
+    <!-- Prevention Tips -->
+    <div class="card" id="card-prevention" style="display:none;">
+      <div class="card-header">
+        <div class="card-icon purple">🛡️</div>
+        <h2>Prevention Tips</h2>
+      </div>
+      <ul class="prevention-list" id="res-prevention"></ul>
+    </div>
+
+  </div>
+
+  <footer>Powered by AWS Bedrock Nova Lite &mdash; AI Log Analyzer &mdash; <a href="https://jimmyhubbard2.cc/projects/">← Back to Projects</a></footer>
+
+  <script>
+    // ── CONFIG ──────────────────────────────────────────────────
+    const API_ENDPOINT = 'https://90rplm0obh.execute-api.us-east-1.amazonaws.com/prod/analyze';
+    // ────────────────────────────────────────────────────────────
+
+    const dropZone   = document.getElementById('drop-zone');
+    const browseLink = document.getElementById('browse-link');
+    const fileInput  = document.getElementById('file-input');
+    const fileNameEl = document.getElementById('file-name');
+    const btnAnalyze = document.getElementById('btn-analyze');
+    const btnClear   = document.getElementById('btn-clear');
+    const statusEl   = document.getElementById('status');
+    const resultsEl  = document.getElementById('results');
+
+    let loadedFile = null;
+
+    // Drag & drop
+    browseLink.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('over');
+      if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+    function loadFile(file) {
+      const allowed = ['.log', '.txt', '.csv', '.json'];
+      const ext = '.' + file.name.split('.').pop().toLowerCase();
+      if (!allowed.includes(ext)) { setStatus('Unsupported file type. Use LOG, TXT, CSV, or JSON.', 'error'); return; }
+      loadedFile = file;
+      fileNameEl.textContent = `✓ Loaded: ${file.name} (${file.size.toLocaleString()} bytes)`;
+      btnAnalyze.disabled = false;
+      btnClear.disabled = false;
+      setStatus('');
+      resultsEl.style.display = 'none';
+    }
+
+    btnClear.addEventListener('click', () => {
+      loadedFile = null;
+      fileInput.value = '';
+      fileNameEl.textContent = '';
+      btnAnalyze.disabled = true;
+      btnClear.disabled = true;
+      setStatus('');
+      resultsEl.style.display = 'none';
+    });
+
+    btnAnalyze.addEventListener('click', async () => {
+      if (!loadedFile) return;
+
+      btnAnalyze.disabled = true;
+      btnClear.disabled = true;
+      resultsEl.style.display = 'none';
+      statusEl.innerHTML = '<span class="wave"><span></span><span></span><span></span><span></span><span></span></span> Analyzing with AI...';
+      statusEl.className = 'analyzing';
+
+      try {
+        const text = await loadedFile.text();
+        const response = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ logContent: text, fileName: loadedFile.name })
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        renderResults(data);
+        setStatus('');
+        resultsEl.style.display = 'block';
+      } catch (err) {
+        setStatus('Error: ' + err.message, 'error');
+      } finally {
+        btnAnalyze.disabled = false;
+        btnClear.disabled = false;
+      }
+    });
+
+    function renderResults(d) {
+      // Overview
+      document.getElementById('res-logType').textContent = d.logType || '—';
+      const sev = document.getElementById('res-severity');
+      sev.textContent = d.severity || '—';
+      const sevColors = { Critical: '#f87171', High: '#f97316', Medium: '#fbbf24', Low: '#60a5fa', Info: '#34d399' };
+      const bg = sevColors[d.severity] || '#94a3b8';
+      sev.style.background = bg + '22';
+      sev.style.color = bg;
+      sev.style.border = `1px solid ${bg}55`;
+
+      // Summary
+      document.getElementById('res-summary').textContent = d.summary || '—';
+
+      // Timeline
+      showCard('card-timeline', 'res-timeline', d.timeline, null, 'text');
+
+      // Errors
+      showCard('card-errors', 'res-errors', d.errors, 'dot-red', 'list');
+
+      // Warnings
+      showCard('card-warnings', 'res-warnings', d.warnings, 'dot-yellow', 'list');
+
+      // Patterns
+      showCard('card-patterns', 'res-patterns', d.patterns, 'dot-blue', 'list');
+
+      // Actions
+      showCard('card-actions', 'res-actions', d.recommendedActions, 'dot-green', 'list');
+
+      // Prevention
+      if (d.preventionTips && d.preventionTips.length > 0) {
+        const ul = document.getElementById('res-prevention');
+        ul.innerHTML = d.preventionTips.map(t => `<li>${t}</li>`).join('');
+        document.getElementById('card-prevention').style.display = 'block';
+      } else {
+        document.getElementById('card-prevention').style.display = 'none';
+      }
+    }
+
+    function showCard(cardId, contentId, data, dotClass, type) {
+      const card = document.getElementById(cardId);
+      const el = document.getElementById(contentId);
+      if (!data || (Array.isArray(data) && data.length === 0) || data === '') {
+        card.style.display = 'none';
+        return;
+      }
+      card.style.display = 'block';
+      if (type === 'text') {
+        el.textContent = data;
+      } else {
+        el.innerHTML = data.map(item =>
+          `<div class="item-entry"><div class="item-dot ${dotClass}"></div><span>${item}</span></div>`
+        ).join('');
+      }
+    }
+
+    function setStatus(msg, type = '') {
+      statusEl.textContent = msg;
+      statusEl.className = type;
+    }
+
+    document.getElementById('btn-demo').addEventListener('click', () => {
+      fetch('demo.log')
+        .then(res => {
+          if (!res.ok) throw new Error('Demo log not found');
+          return res.text();
+        })
+        .then(content => {
+          loadedFile = new File([content], 'demo.log', { type: 'text/plain' });
+          fileNameEl.textContent = `✓ Loaded: demo.log (${content.length.toLocaleString()} bytes)`;
+          btnAnalyze.disabled = false;
+          btnClear.disabled = false;
+          resultsEl.style.display = 'none';
+          setStatus('');
+          btnAnalyze.click();
+        })
+        .catch(err => {
+          alert('Demo failed to load: ' + err.message);
+        });
+    });
+  </script>
+</body>
+</html>
