@@ -58,14 +58,7 @@ chmod +x deploy.sh
 
 To update only the frontend after changes to `index.html`:
 
-```bash
-aws s3 sync . s3://jimmy-log-analyzer \
-  --profile portfolio-user \
-  --exclude ".git/*" \
-  --exclude "lambda_function.py" \
-  --exclude "deploy.sh" \
-  --exclude "demo.log"
-```
+Frontend deploys automatically on push to main via GitHub Actions (.github/workflows/deploy.yml) — S3 sync + CloudFront invalidation handled by the workflow.
 
 **S3 bucket:** `jimmy-log-analyzer` (us-east-1)  
 **API Gateway:** `https://90rplm0obh.execute-api.us-east-1.amazonaws.com/prod/analyze`
