@@ -25,22 +25,10 @@ aws iam create-role \
   }' \
   --region $REGION
 
-# Attach basic Lambda execution + Bedrock access
+# Attach basic Lambda execution
 aws iam attach-role-policy \
   --role-name $ROLE_NAME \
   --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
-aws iam put-role-policy \
-  --role-name $ROLE_NAME \
-  --policy-name BedrockNovaLiteAccess \
-  --policy-document '{
-    "Version": "2012-10-17",
-    "Statement": [{
-      "Effect": "Allow",
-      "Action": "bedrock:InvokeModel",
-      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-lite-v1:0"
-    }]
-  }'
 
 echo "Waiting 10s for IAM role to propagate..."
 sleep 10
