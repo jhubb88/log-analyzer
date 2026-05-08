@@ -2,7 +2,7 @@
 
 Paste or upload a log file and get an AI-generated analysis — errors, warnings, patterns, and recommended fixes.
 
-**Live demo:** https://dn6duxmzpvyau.cloudfront.net
+**Live demo:** https://log-analyzer.jimmyhubbard2.cc
 
 ## Overview
 
