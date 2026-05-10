@@ -574,7 +574,10 @@
         const text = await loadedFile.text();
         const response = await fetch(API_ENDPOINT, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': '7zdef0SofG3QmmTxuXokP88GjHTjGKah9kt6Z95K'
+          },
           body: JSON.stringify({ logContent: text, fileName: loadedFile.name })
         });
 
