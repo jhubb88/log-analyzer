@@ -89,9 +89,9 @@ def cors_response(status_code, body):
         'statusCode': status_code,
         'headers': {
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Headers': 'Content-Type,x-api-key,Authorization',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Content-Type': 'application/json'
+            'Content-Type,x-api-key,Authorization': 'application/json'
         },
         'body': json.dumps(body)
     }
