@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -29,3 +31,51 @@ jobs:
 
       - name: Invalidate CloudFront cache
         run: aws cloudfront create-invalidation --distribution-id E3Q8ZCVRAS854T --paths "/*"
+
+      - name: Check if Lambda code changed
+        id: lambda_diff
+        run: |
+          if [ "$(git rev-list --count HEAD)" -eq 1 ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Initial commit — deploying Lambda"
+          elif git diff --name-only HEAD^ HEAD | grep -q "^lambda_function.py$"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "lambda_function.py changed — deploying Lambda"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "lambda_function.py unchanged — skipping Lambda deploy"
+          fi
+
+      - name: Deploy Lambda
+        if: steps.lambda_diff.outputs.changed == 'true'
+        run: |
+          zip -j lambda.zip lambda_function.py
+          aws lambda update-function-code \
+            --function-name jimmy-log-analyzer \
+            --zip-file fileb://lambda.zip \
+            --region us-east-1
+          aws lambda wait function-updated \
+            --function-name jimmy-log-analyzer \
+            --region us-east-1
+
+      - name: CORS smoke test
+        run: |
+          API_URL="https://90rplm0obh.execute-api.us-east-1.amazonaws.com/prod/analyze"
+          ORIGIN="https://log-analyzer.jimmyhubbard2.cc"
+
+          RESPONSE=$(curl -s -i -X OPTIONS "$API_URL" \
+            -H "Origin: $ORIGIN" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: content-type,x-api-key")
+
+          echo "$RESPONSE"
+
+          ALLOW_HEADERS=$(echo "$RESPONSE" | grep -i "access-control-allow-headers" | tr -d '\r')
+
+          if echo "$ALLOW_HEADERS" | grep -qi "x-api-key"; then
+            echo "✅ CORS preflight allows x-api-key"
+          else
+            echo "❌ CORS preflight MISSING x-api-key in Access-Control-Allow-Headers"
+            echo "Response was: $ALLOW_HEADERS"
+            exit 1
+          fi
