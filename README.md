@@ -4,6 +4,8 @@ Paste or upload a log file and get an AI-generated analysis — errors, warnings
 
 **Live demo:** https://log-analyzer.jimmyhubbard2.cc
 
+**Full documentation:** [PROJECT_MASTER.md](./PROJECT_MASTER.md) — architecture, AWS operational reference, build history, and key decisions
+
 ## Overview
 
 The AI Log Analyzer sends log file content to an AWS Lambda function, which calls the Anthropic API (Claude Haiku) to produce a structured analysis. The result identifies log type, overall severity, specific errors and warnings, recurring patterns, and actionable recommendations. Accepts `.log`, `.txt`, `.csv`, and `.json` files up to 50,000 characters.
